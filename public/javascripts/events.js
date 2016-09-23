@@ -7,6 +7,11 @@ $(function() {
   var Events = {
     collection: [],
     $el: $("#events_list"), // cache container from DOM that will have the events list
+    sort: function() {
+      this.collection.sort(function(item1, item2) { // sort events by their date
+        return item1.date - item2.date;
+      });
+    },
     add: function(events) {
       var self = this; // store context in local variable so it can be retained in forEach function invocations
       events = _.isArray(events) ? events : [events]; // if passed in event is not an array, put it in array
@@ -14,7 +19,14 @@ $(function() {
       events.forEach(function(event) {
         self.collection.push(event);
       });
-
+      this.sort();
+      this.render();
+    },
+    remove: function(id) { // remove event from the collection of events based on its id
+      this.collection = this.collection.filter(function(event) {
+        return event.id !== id;
+      });
+      this.sort();
       this.render();
     },
     render: function() { // write event items to page using Handlebars template
@@ -22,7 +34,7 @@ $(function() {
     }
   };
 
-  $("form").on("submit", function(e) {
+  $("form").on("submit", function(e) { // bind submit event to form
     e.preventDefault();
     var $form = $(this);
     $.ajax({
@@ -32,6 +44,19 @@ $(function() {
       success: function(json) {
         Events.add(json);
       }
+    });
+  });
+
+  Events.$el.on("click", "a.remove", function(e) { // delegate click event to container for events
+    e.preventDefault();
+    var id = +$(e.target).closest("li").attr("data-id");
+
+    Events.remove(id);
+
+    $.ajax({
+      url: "events/delete",
+      type: "post",
+      data: "id=" + id
     });
   });
 
